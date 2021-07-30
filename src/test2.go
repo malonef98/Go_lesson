@@ -1,47 +1,49 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-type Person struct {
-	Name string
+var (
+	chanNun = make(chan int, 2000)
+	chanRes = make(chan int, 2000)
+)
+
+func PutNum(n int) {
+	for i := 1; i <= n; i++ {
+		chanNun <- i
+	}
+	close(chanNun)
 }
 
-type Student struct {
-	Name string
-	Ages int
+func Cal() {
+	for {
+		v, ok := <-chanNun
+		if !ok {
+			break
+		}
+		var res int
+		for i := 0; i < v; i++ {
+			res = res + i
+		}
+		chanRes <- res
+	}
 }
 
-func (person Person) test ()  {
-	person.Name = "jack"
-	fmt.Println("test=:",person.Name)
-}
+func main() {
+	go PutNum(2000)
 
-func test2 (p *Person)  {
-	fmt.Println("test2:=",p.Name)
-}
-
-func main()  {
-	//创建结构体的时候直接赋值
-	var stu1 = Student{"小明",19}
-	sut2 := Student{"小红",18}
-
-	//在创建结构体变量的时候，吧字段名和字段值写在一起
-	//这种写法不依赖字段的顺序
-	var stu3 = Student{
-		Name: "jack",
-		Ages: 21,
+	for i := 0; i < 8; i++ {
+		go Cal()
 	}
 
-	stu4 := Student{
-		Ages: 17,
-		Name: "mary",
+	time.Sleep(time.Second)
+	_, ok := <-chanNun
+	if !ok {
+		close(chanRes)
+		for v := range chanRes {
+			fmt.Println(v)
+		}
 	}
-
-
-	//返回结构体的指针类型
-	//返回结构体指针类型
-	var stu5  = &Student{"小王",21}
-	stu6 := &Student{"小刚",23}
-
-	fmt.Println(stu1,sut2,stu3,stu4,stu5,*stu6)
 }
